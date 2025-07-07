@@ -8,6 +8,5 @@ Route::prefix('v1')->group(function () {
     Route::get('/rooms/available', [RoomController::class, 'getAvailableRooms']);
 
     // Бронирование номера
-    Route::post('/rooms/{room}/book', [RoomController::class, 'bookRoom'])
-        ->middleware('auth:sanctum');
+    Route::post('/rooms/{room}/book', [RoomController::class, 'bookRoom']);
 });

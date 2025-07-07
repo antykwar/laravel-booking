@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BookRoomRequest;
 use App\Http\Requests\GetAvailableRoomsRequest;
 use App\Http\Resources\AvailableRoomCollection;
 use App\Models\Room;
@@ -24,5 +25,10 @@ class RoomController extends Controller
         $availableRooms = Room::availableBetween($dates['begin_date'], $dates['end_date'])->get();
 
         return new AvailableRoomCollection($availableRooms);
+    }
+
+    public function bookRoom(BookRoomRequest $request, Room $room)
+    {
+        //
     }
 }

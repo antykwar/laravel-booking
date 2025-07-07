@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Room;
+use App\Exceptions\RoomNotFoundException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +22,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Route::bind('room', function ($value) {
+            $room = Room::find($value);
+
+            if (!$room) {
+                throw new RoomNotFoundException();
+            }
+
+            return $room;
+        });
     }
 }
