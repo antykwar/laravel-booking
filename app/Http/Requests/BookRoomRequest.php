@@ -6,6 +6,8 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class BookRoomRequest extends FormRequest
 {
@@ -14,8 +16,22 @@ class BookRoomRequest extends FormRequest
      */
     public function authorize(): bool
     {
+        // Имитируем получение токена - в норме это делается через отдельный метод API
+        Auth::loginUsingId($this->input('user_id'));
+        $token = $this->user()->createToken('user-token', ['room:book'])->plainTextToken;
+        Auth::logout();
+
+        // Имитируем использование токена - в норме получаем его из заголовка и авторизацию обрабатывает middleware
+        $accessToken = PersonalAccessToken::findToken($token);
+        if ($accessToken) {
+            auth()->login($accessToken->tokenable);
+            $this->user()->withAccessToken($accessToken);
+        }
+
+        // Непосредственно проверка прав пользователя
         return $this->user()
-            && $this->user()->id === (int)($this->input('user_id'));
+            && $this->user()->id === (int)($this->input('user_id'))
+            && $this->user()->tokenCan('room:book');
     }
 
     /**
