@@ -1,0 +1,92 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        container_name: booking_app
+        restart: unless-stopped
+        working_dir: /var/www/html
+        volumes:
+            - ./:/var/www/html
+            - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+        environment:
+            - DB_CONNECTION=pgsql
+            - DB_HOST=postgres
+            - DB_PORT=5432
+            - DB_DATABASE=booking
+            - DB_USERNAME=booking
+            - DB_PASSWORD=booking
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - QUEUE_CONNECTION=rabbitmq
+            - RABBITMQ_HOST=rabbitmq
+        depends_on:
+            - postgres
+            - redis
+            - rabbitmq
+        networks:
+            - booking_network
+
+    postgres:
+        image: postgres:17
+        container_name: booking_postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: booking
+            POSTGRES_USER: booking
+            POSTGRES_PASSWORD: booking
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+        networks:
+            - booking_network
+
+    redis:
+        image: redis:7.2
+        container_name: booking_redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - booking_network
+
+    rabbitmq:
+        image: rabbitmq:3.13-management
+        container_name: booking_rabbitmq
+        restart: unless-stopped
+        environment:
+            RABBITMQ_DEFAULT_USER: booking
+            RABBITMQ_DEFAULT_PASS: booking
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        volumes:
+            - rabbitmq_data:/var/lib/rabbitmq
+        networks:
+            - booking_network
+
+    nginx:
+        image: nginx:alpine
+        container_name: booking_nginx
+        restart: unless-stopped
+        ports:
+            - "80:80"
+        volumes:
+            - ./:/var/www/html
+            - ./docker/nginx/conf.d:/etc/nginx/conf.d
+        depends_on:
+            - app
+        networks:
+            - booking_network
+
+volumes:
+    postgres_data:
+    redis_data:
+    rabbitmq_data:
+
+networks:
+    booking_network:
+        driver: bridge
