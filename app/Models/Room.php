@@ -19,4 +19,32 @@ class Room extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+    public function isAvailable($startDate, $endDate): bool
+    {
+        return !$this->bookings()
+            ->where(function ($query) use ($startDate, $endDate) {
+                $this->addOverlapCondition($query, $startDate, $endDate);
+            })
+            ->exists();
+    }
+
+    public function scopeAvailableBetween($query, $startDate, $endDate)
+    {
+        return $query->whereDoesntHave('bookings', function($q) use ($startDate, $endDate) {
+            $q->where(function($query) use ($startDate, $endDate) {
+                $this->addOverlapCondition($query, $startDate, $endDate);
+            });
+        });
+    }
+
+    public function addOverlapCondition($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('begin_date', [$startDate, $endDate])
+            ->orWhereBetween('end_date', [$startDate, $endDate])
+            ->orWhere(function($q) use ($startDate, $endDate) {
+                $q->where('begin_date', '<=', $startDate)
+                    ->where('end_date', '>=', $endDate);
+            });
+    }
 }
