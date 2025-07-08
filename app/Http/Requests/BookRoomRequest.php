@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,19 +17,13 @@ class BookRoomRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Имитируем получение токена - в норме это делается через отдельный метод API
-        Auth::loginUsingId($this->input('user_id'));
-        $token = $this->user()->createToken('user-token', ['room:book'])->plainTextToken;
-        Auth::logout();
+        // Имитируем получение токена - для этого в штатном режиме используется отдельный метод API
+        $token = $this->createUserToken($this->input('user_id'), ['room:book']);
 
-        // Имитируем использование токена - в норме получаем его из заголовка и авторизацию обрабатывает middleware
-        $accessToken = PersonalAccessToken::findToken($token);
-        if ($accessToken) {
-            auth()->login($accessToken->tokenable);
-            $this->user()->withAccessToken($accessToken);
-        }
+        // Имитируем использование токена - в штатном режиме получаем его из заголовка, авторизацию обрабатывает middleware
+        $this->loginUsingToken($token);
 
-        // Непосредственно проверка прав пользователя
+        // Непосредственно проверка прав пользователя (+ возможность управлять только своими бронированиями)
         return $this->user()
             && $this->user()->id === (int)($this->input('user_id'))
             && $this->user()->tokenCan('room:book');
@@ -68,6 +63,28 @@ class BookRoomRequest extends FormRequest
             'end_date.date_format' => 'Формат даты окончания периода: YYYY-MM-DD',
             'end_date.after_or_equal' => 'Окончания бронирования не может быть раньше начала бронирования',
         ];
+    }
+
+    private function createUserToken(mixed $userId, array $abilities): ?string
+    {
+        if (!User::where('id', $userId)->exists()) {
+            return null;
+        }
+
+        Auth::loginUsingId($userId);
+        $token = $this->user()->createToken('user-token', $abilities)->plainTextToken;
+        Auth::logout();
+
+        return $token;
+    }
+
+    private function loginUsingToken(string $token): void
+    {
+        $accessToken = PersonalAccessToken::findToken($token);
+        if ($accessToken) {
+            auth()->login($accessToken->tokenable);
+            $this->user()->withAccessToken($accessToken);
+        }
     }
 
     protected function failedAuthorization(): void
