@@ -43,6 +43,8 @@ class RoomController extends Controller
             $validated['end_date']
         );
 
-
+        return response()->json([
+            'success' => true,
+        ], 201);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\RoomAlreadyBookedException;
 use App\Exceptions\RoomInBookingProgressException;
+use App\Mail\BookingConfirmed;
 use App\Models\Booking;
 use App\Models\Room;
 
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class BookingRoomService extends AbstractService
 {
@@ -33,6 +35,8 @@ class BookingRoomService extends AbstractService
             $booking->user()->associate($user);
             $booking->fill(['begin_date' => $beginDate, 'end_date' => $endDate]);
             $booking->save();
+
+            Mail::to($user)->send(new BookingConfirmed($booking));
 
             DB::commit();
         } catch (RoomInBookingProgressException|RoomAlreadyBookedException $exception) {
