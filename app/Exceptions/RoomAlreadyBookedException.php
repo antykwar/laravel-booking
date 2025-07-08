@@ -5,11 +5,11 @@ namespace App\Exceptions;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
-class RoomNotFoundException extends Exception
+class RoomAlreadyBookedException extends Exception
 {
-    public function __construct($message = "Номер с указанным ID не найден")
+    public function __construct($message = "Номер с указанным ID уже забронирован на указанные даты")
     {
-        parent::__construct($message, 404);
+        parent::__construct($message, 423);
     }
 
     public function render(): JsonResponse
@@ -18,6 +18,6 @@ class RoomNotFoundException extends Exception
             'success' => false,
             'data' => null,
             'message' => $this->getMessage(),
-        ], 404);
+        ], 423);
     }
 }
